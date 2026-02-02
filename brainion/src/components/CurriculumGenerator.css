@@ -1,0 +1,67 @@
+.curriculum-container {
+  width: 100%;
+  padding: 1rem;
+}
+
+.loading,
+.placeholder {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.curriculum-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.week-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: #f9f9f9;
+}
+
+.week-section h2 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.day-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.day-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.day-card h3 {
+  margin: 0 0 0.75rem 0;
+  color: #2563eb;
+  font-size: 1.1rem;
+}
+
+.objectives-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style-type: disc;
+}
+
+.objectives-list li {
+  margin-bottom: 0.5rem;
+  color: #555;
+  line-height: 1.4;
+}
