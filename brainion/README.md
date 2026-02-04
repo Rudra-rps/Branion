@@ -5,9 +5,56 @@
 Brainion is an intelligent curriculum generator that uses AI to create structured, week-by-week learning plans tailored to your goals. Simply specify what you want to learn, how long you have, and your skill level, and let AI design your perfect learning journey.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![React](https://img.shields.io/badge/React-19.2-61dafb)
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## 📅 Development Log - February 4, 2026
+
+### ✅ Completed Today
+
+**UI/UX Fixes:**
+- Fixed button visibility issues on landing page
+- Converted all buttons from CSS variables to glassmorphism design (white/silver shades with backdrop blur)
+- Added smooth fadeUp animation to "Faster Than Ever" hero text
+- Fixed Generate Curriculum button visibility in dashboard sidebar
+- Resolved hydration errors caused by browser extensions
+
+**Technical Improvements:**
+- Improved Tambo AI streaming response handling
+- Increased timeout for LLM responses (3+ seconds, scales with curriculum duration)
+- Better JSON extraction and validation from AI responses
+- Added detailed console logging for debugging
+- Enhanced error messages for curriculum generation
+
+**Architecture Documentation:**
+- Documented full application architecture
+- Explained data flow from user input → AI → display
+- Clarified Tambo AI role as LLM provider wrapper
+
+### 🔄 In Progress
+
+**Curriculum Generation:**
+- Testing improved streaming response handling
+- Fine-tuning timeout values for different curriculum lengths
+- Validating JSON structure from AI responses
+
+### 🎯 Next Up
+
+**Critical:**
+- Complete testing of curriculum generation with various topics/durations
+- Fix any remaining JSON parsing issues
+- Add loading indicators during generation
+
+**Enhancements:**
+- Progress tracking functionality
+- Export to PDF/Markdown (partially implemented)
+- Dark mode support
+- Mobile responsiveness testing and improvements
+
+---
 
 ## ✨ Features
 

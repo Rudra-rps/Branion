@@ -95,8 +95,10 @@ Be concise, focused, and practical. Generate curriculum now.`
     try {
       const message = await sendThreadMessage(prompt)
       
-      // Wait a bit for streaming to complete
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Wait longer for streaming to complete (increase timeout based on duration)
+      const waitTime = Math.max(3000, duration * 500) // At least 3 seconds, more for longer curricula
+      console.log(`Waiting ${waitTime}ms for response to complete...`)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
       
       // Get the full content
       let textContent = ''
@@ -106,26 +108,42 @@ Be concise, focused, and practical. Generate curriculum now.`
         textContent = message.content.map(c => typeof c === 'string' ? c : c.text || '').join('')
       }
       
-      console.log('Received content:', textContent)
+      console.log('Received content length:', textContent.length)
+      console.log('First 200 chars:', textContent.substring(0, 200))
       
-      // Extract JSON from response - look for the last complete JSON object
-      const jsonMatches = textContent.match(/\{(?:[^{}]|(?:\{(?:[^{}]|\{[^{}]*\})*\}))*\}/g)
-      if (jsonMatches && jsonMatches.length > 0) {
-        // Try to parse the last (most complete) JSON object
-        const lastJson = jsonMatches[jsonMatches.length - 1]
-        const parsed: CurriculumData = JSON.parse(lastJson)
-        setCurriculum(parsed)
+      // Try to find complete JSON - look for pattern between first { and last }
+      const firstBrace = textContent.indexOf('{')
+      const lastBrace = textContent.lastIndexOf('}')
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const jsonString = textContent.substring(firstBrace, lastBrace + 1)
+        console.log('Attempting to parse JSON of length:', jsonString.length)
         
-        // Auto-save
-        saveCurriculum(parsed)
-        setSavedCurricula(getSavedCurricula())
-        
-        toast({
-          title: 'Curriculum Generated!',
-          description: `Created ${parsed.weeks.length}-week curriculum for ${parsed.topic}`,
-        })
+        try {
+          const parsed: CurriculumData = JSON.parse(jsonString)
+          
+          // Validate structure
+          if (!parsed.weeks || !Array.isArray(parsed.weeks) || parsed.weeks.length === 0) {
+            throw new Error('Invalid curriculum structure: missing weeks')
+          }
+          
+          setCurriculum(parsed)
+          
+          // Auto-save
+          saveCurriculum(parsed)
+          setSavedCurricula(getSavedCurricula())
+          
+          toast({
+            title: 'Curriculum Generated!',
+            description: `Created ${parsed.weeks.length}-week curriculum for ${parsed.topic}`,
+          })
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError)
+          console.error('Attempted to parse:', jsonString.substring(0, 500))
+          throw new Error('Failed to parse curriculum JSON. The response may be incomplete.')
+        }
       } else {
-        throw new Error('Invalid response format - no JSON found')
+        throw new Error('No valid JSON found in response')
       }
     } catch (error) {
       console.error('Failed to generate curriculum:', error)
