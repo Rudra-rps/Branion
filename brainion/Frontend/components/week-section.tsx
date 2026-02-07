@@ -20,9 +20,11 @@ interface WeekSectionProps {
   curriculumId?: string
   onProgressUpdate?: () => void
   onUpdateDay?: (weekNumber: number, dayIndex: number, updates: { title?: string; objectives?: string[] }) => void
+  onRegenerateDay?: (weekNumber: number, dayIndex: number) => void
+  onAddCustomDay?: (weekNumber: number) => void
 }
 
-export function WeekSection({ week, title, days, color, curriculumId, onProgressUpdate, onUpdateDay }: WeekSectionProps) {
+export function WeekSection({ week, title, days, color, curriculumId, onProgressUpdate, onUpdateDay, onRegenerateDay, onAddCustomDay }: WeekSectionProps) {
   const [expanded, setExpanded] = useState(true)
   const [completedCount, setCompletedCount] = useState(0)
   const totalHours = days.reduce((sum, day) => sum + day.estimatedTime, 0)
@@ -76,13 +78,13 @@ export function WeekSection({ week, title, days, color, curriculumId, onProgress
   ]
 
   return (
-    <Card className="bg-card border-border overflow-hidden mb-6">
+    <Card className="bg-card border-border overflow-hidden mb-6 transition-all duration-300 hover:shadow-lg">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-4 md:p-6 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-3 md:gap-4 flex-1">
-          <div className={`w-1 h-12 md:h-14 rounded-full bg-gradient-to-b ${color}`} />
+          <div className={`w-1 h-12 md:h-14 rounded-full bg-gradient-to-b ${color} ${completedCount > 0 && completedCount < days.length ? 'animate-pulse' : ''}`} />
           <div className="text-left">
             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
               <h3 className="font-bold text-base md:text-lg text-foreground">
@@ -117,15 +119,22 @@ export function WeekSection({ week, title, days, color, curriculumId, onProgress
                 Week Progress
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm font-semibold text-foreground">
+                <span className={`text-xs md:text-sm font-semibold ${
+                  completedCount === days.length 
+                    ? 'text-green-500' 
+                    : completedCount > 0 
+                    ? 'text-primary' 
+                    : 'text-foreground'
+                }`}>
                   {Math.round((completedCount / days.length) * 100)}%
+                  {completedCount === days.length && ' ✓'}
                 </span>
                 {completedCount < days.length && (
                   <Button 
                     size="sm" 
                     variant="outline"
                     onClick={handleMarkWeekComplete}
-                    className="text-xs h-7"
+                    className="text-xs h-7 transition-all hover:scale-105"
                   >
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Mark Week Done
@@ -135,7 +144,11 @@ export function WeekSection({ week, title, days, color, curriculumId, onProgress
             </div>
             <div className="w-full h-2 bg-border rounded-full overflow-hidden">
               <div
-                className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
+                className={`h-full rounded-full transition-all duration-500 ${
+                  completedCount === days.length 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                    : `bg-gradient-to-r ${color}`
+                }`}
                 style={{ width: `${(completedCount / days.length) * 100}%` }}
               />
             </div>
@@ -155,9 +168,24 @@ export function WeekSection({ week, title, days, color, curriculumId, onProgress
                 weekNumber={week}
                 onToggleComplete={handleDayToggle}
                 onUpdateDay={(updates) => onUpdateDay?.(week, idx, updates)}
+                onRegenerate={() => onRegenerateDay?.(week, idx)}
               />
             ))}
           </div>
+          
+          {/* Add Custom Day button */}
+          {onAddCustomDay && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAddCustomDay(week)}
+                className="w-full text-xs md:text-sm"
+              >
+                + Add Custom Day
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </Card>

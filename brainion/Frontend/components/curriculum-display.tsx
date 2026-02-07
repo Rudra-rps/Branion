@@ -10,17 +10,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useCurriculum } from '@/hooks/use-curriculum'
 import { WeekSection } from '@/components/week-section'
 import { exportToPDF, downloadMarkdown, copyMarkdownToClipboard, copyShareLink, type CurriculumData } from '@/lib/export-utils'
 import { saveCurriculum } from '@/lib/storage-utils'
+import { useTamboThread } from '@tambo-ai/react'
 
 export function CurriculumDisplay() {
   const { curriculum, setCurriculum, isGenerating } = useCurriculum()
   const { toast } = useToast()
+  const { sendThreadMessage } = useTamboThread()
   const [curriculumId, setCurriculumId] = useState<string>('')
   const [progress, setProgress] = useState(0)
+  const [showCustomDayDialog, setShowCustomDayDialog] = useState(false)
+  const [customDayWeek, setCustomDayWeek] = useState(0)
+  const [customDayTitle, setCustomDayTitle] = useState('')
+  const [customDayObjectives, setCustomDayObjectives] = useState(['', '', ''])
+  const [customDayTime, setCustomDayTime] = useState(3)
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   // Generate curriculum ID when curriculum changes
   useEffect(() => {
@@ -72,6 +89,131 @@ export function CurriculumDisplay() {
       // Save updated curriculum
       saveCurriculum(updatedCurriculum)
     }
+  }
+
+  const handleRegenerateDay = async (weekNumber: number, dayIndex: number) => {
+    if (!curriculum) return
+    
+    setIsRegenerating(true)
+    const weekIdx = curriculum.weeks.findIndex(w => w.week === weekNumber)
+    
+    if (weekIdx === -1) {
+      toast({
+        title: 'Error',
+        description: 'Week not found',
+        variant: 'destructive',
+      })
+      setIsRegenerating(false)
+      return
+    }
+
+    const currentDay = curriculum.weeks[weekIdx].days[dayIndex]
+    const prompt = `Regenerate a single day for a ${curriculum.level} level curriculum on ${curriculum.topic}.
+
+Week ${weekNumber}: ${curriculum.weeks[weekIdx].title}
+Current day ${currentDay.day}: ${currentDay.title}
+
+Generate a fresh alternative for this day with:
+- A different title
+- 3-4 new specific learning objectives
+- Estimated time in hours (${currentDay.estimatedTime} hours as reference)
+
+Output ONLY valid JSON in this exact format:
+{
+  "day": ${currentDay.day},
+  "title": "New day title",
+  "objectives": ["Objective 1", "Objective 2", "Objective 3"],
+  "estimatedTime": 3
+}`
+
+    try {
+      const message = await sendThreadMessage(prompt)
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      let textContent = ''
+      if (typeof message.content === 'string') {
+        textContent = message.content
+      } else if (Array.isArray(message.content)) {
+        textContent = message.content.map(c => typeof c === 'string' ? c : c.text || '').join('')
+      }
+      
+      const firstBrace = textContent.indexOf('{')
+      const lastBrace = textContent.lastIndexOf('}')
+      
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        const jsonString = textContent.substring(firstBrace, lastBrace + 1)
+        const newDay = JSON.parse(jsonString)
+        
+        const updatedCurriculum = { ...curriculum }
+        updatedCurriculum.weeks[weekIdx].days[dayIndex] = {
+          ...currentDay,
+          title: newDay.title,
+          objectives: newDay.objectives,
+          estimatedTime: newDay.estimatedTime || currentDay.estimatedTime
+        }
+        
+        setCurriculum(updatedCurriculum)
+        saveCurriculum(updatedCurriculum)
+        
+        toast({
+          title: 'Day Regenerated',
+          description: `Day ${currentDay.day} has been updated`,
+        })
+      }
+    } catch (error) {
+      console.error('Regeneration failed:', error)
+      toast({
+        title: 'Regeneration Failed',
+        description: 'Failed to regenerate day. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
+  const handleAddCustomDay = (weekNumber: number) => {
+    setCustomDayWeek(weekNumber)
+    setCustomDayTitle('')
+    setCustomDayObjectives(['', '', ''])
+    setCustomDayTime(3)
+    setShowCustomDayDialog(true)
+  }
+
+  const handleSaveCustomDay = () => {
+    if (!curriculum) return
+    
+    const weekIdx = curriculum.weeks.findIndex(w => w.week === customDayWeek)
+    if (weekIdx === -1) return
+    
+    const filteredObjectives = customDayObjectives.filter(obj => obj.trim() !== '')
+    if (!customDayTitle.trim() || filteredObjectives.length === 0) {
+      toast({
+        title: 'Invalid Input',
+        description: 'Please provide a title and at least one objective',
+        variant: 'destructive',
+      })
+      return
+    }
+    
+    const updatedCurriculum = { ...curriculum }
+    const newDayNumber = updatedCurriculum.weeks[weekIdx].days.length + 1
+    
+    updatedCurriculum.weeks[weekIdx].days.push({
+      day: newDayNumber,
+      title: customDayTitle,
+      objectives: filteredObjectives,
+      estimatedTime: customDayTime
+    })
+    
+    setCurriculum(updatedCurriculum)
+    saveCurriculum(updatedCurriculum)
+    setShowCustomDayDialog(false)
+    
+    toast({
+      title: 'Custom Day Added',
+      description: `Added new day to Week ${customDayWeek}`,
+    })
   }
 
   const handleExportPDF = () => {
@@ -238,17 +380,26 @@ export function CurriculumDisplay() {
       </Card>
 
       {/* Overall Progress */}
-      <Card className="p-4 md:p-6">
+      <Card className="p-4 md:p-6 bg-gradient-to-br from-card to-muted/20 border-border hover:shadow-lg transition-all">
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-foreground text-sm md:text-base">
+            <h3 className="font-semibold text-foreground text-sm md:text-base flex items-center gap-2">
               Overall Progress
+              {progress === 100 && <span className="text-2xl">🎉</span>}
             </h3>
-            <span className="text-sm md:text-base font-bold text-accent">{progress}%</span>
+            <span className={`text-sm md:text-base font-bold ${
+              progress === 100 ? 'text-green-500' : 
+              progress >= 50 ? 'text-primary' : 
+              'text-accent'
+            }`}>{progress}%</span>
           </div>
           <div className="w-full h-3 bg-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
+                progress === 100 
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                  : 'bg-gradient-to-r from-primary to-secondary'
+              }`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -261,18 +412,102 @@ export function CurriculumDisplay() {
       {/* Weeks */}
       <div className="space-y-4 md:space-y-6">
         {curriculum.weeks.map((week, idx) => (
-          <WeekSection
-            key={week.week}
-            week={week.week}
-            title={week.title}
-            days={week.days}
-            color={colors[idx % colors.length]}
-            curriculumId={curriculumId}
-            onProgressUpdate={handleProgressUpdate}
-            onUpdateDay={handleUpdateDay}
-          />
+          <div 
+            key={week.week} 
+            className={`animate-fadeIn stagger-${Math.min(idx + 1, 5)}`}
+            style={{ animationFillMode: 'both' }}
+          >
+            <WeekSection
+              week={week.week}
+              title={week.title}
+              days={week.days}
+              color={colors[idx % colors.length]}
+              curriculumId={curriculumId}
+              onProgressUpdate={handleProgressUpdate}
+              onUpdateDay={handleUpdateDay}
+              onRegenerateDay={handleRegenerateDay}
+              onAddCustomDay={handleAddCustomDay}
+            />
+          </div>
         ))}
       </div>
+
+      {/* Custom Day Dialog */}
+      <Dialog open={showCustomDayDialog} onOpenChange={setShowCustomDayDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add Custom Day to Week {customDayWeek}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Day Title</label>
+              <Input
+                value={customDayTitle}
+                onChange={(e) => setCustomDayTitle(e.target.value)}
+                placeholder="e.g., Introduction to React Hooks"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Objectives</label>
+              <div className="space-y-2">
+                {customDayObjectives.map((obj, idx) => (
+                  <Input
+                    key={idx}
+                    value={obj}
+                    onChange={(e) => {
+                      const newObjectives = [...customDayObjectives]
+                      newObjectives[idx] = e.target.value
+                      setCustomDayObjectives(newObjectives)
+                    }}
+                    placeholder={`Objective ${idx + 1}`}
+                  />
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setCustomDayObjectives([...customDayObjectives, ''])}
+              >
+                + Add Objective
+              </Button>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Estimated Time: {customDayTime} hours
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="8"
+                value={customDayTime}
+                onChange={(e) => setCustomDayTime(Number(e.target.value))}
+                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomDayDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveCustomDay}>
+              Add Day
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Regenerating overlay */}
+      {isRegenerating && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <Loader className="w-12 h-12 text-primary animate-spin mx-auto" />
+            <p className="text-muted-foreground">Regenerating day...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

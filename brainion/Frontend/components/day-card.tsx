@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, Clock, MessageSquare, Edit2 } from 'lucide-react'
+import { Check, Clock, MessageSquare, Edit2, RotateCw } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ interface DayCardProps {
   onToggleComplete?: (completed: boolean) => void
   onSaveNote?: (note: string) => void
   onUpdateDay?: (updates: { title?: string; objectives?: string[] }) => void
+  onRegenerate?: () => void
 }
 
 export function DayCard({ 
@@ -37,7 +38,8 @@ export function DayCard({
   weekNumber,
   onToggleComplete,
   onSaveNote,
-  onUpdateDay
+  onUpdateDay,
+  onRegenerate
 }: DayCardProps) {
   const [completed, setCompleted] = useState(false)
   const [note, setNote] = useState('')
@@ -108,13 +110,13 @@ export function DayCard({
   return (
     <>
       <Card
-        className={`p-4 md:p-5 relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer group ${
+        className={`p-4 md:p-5 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer group ${
           completed
             ? 'bg-muted border-accent opacity-75'
-            : 'bg-card hover:border-primary border-border'
+            : 'bg-card hover:border-primary border-border hover-lift'
         }`}
       >
-        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${color}`} />
+        <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${color} transition-all duration-300 group-hover:w-2`} />
 
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -193,7 +195,7 @@ export function DayCard({
         </ul>
 
         <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1 bg-muted px-2 py-1 rounded">
               <Clock className="w-3 h-3 md:w-4 md:h-4" />
               <span>{estimatedTime}h</span>
@@ -209,22 +211,34 @@ export function DayCard({
               {estimatedTime <= 2 ? 'Easy' : estimatedTime <= 3 ? 'Medium' : 'Hard'}
             </span>
           </div>
-          <button
-            onClick={handleOpenNote}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded transition-all ${
-              note
-                ? 'bg-primary/20 text-primary'
-                : 'bg-muted text-muted-foreground hover:bg-border'
-            }`}
-            aria-label="Add note"
-            title="Add or view notes"
-          >
-            <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="text-xs hidden sm:inline">{note ? 'View Note' : 'Add Note'}</span>
-            {note && (
-              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+          <div className="flex items-center gap-1">
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="p-1.5 rounded-lg transition-colors bg-muted text-muted-foreground hover:bg-border hover:text-foreground"
+                aria-label="Regenerate day"
+                title="Regenerate this day"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
             )}
-          </button>
+            <button
+              onClick={handleOpenNote}
+              className={`flex items-center gap-1 px-2 md:px-3 py-1.5 rounded transition-all ${
+                note
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-muted text-muted-foreground hover:bg-border'
+              }`}
+              aria-label="Add note"
+              title="Add or view notes"
+            >
+              <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <span className="text-xs hidden sm:inline">{note ? 'View Note' : 'Add Note'}</span>
+              {note && (
+                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              )}
+            </button>
+          </div>
         </div>
       </Card>
 
