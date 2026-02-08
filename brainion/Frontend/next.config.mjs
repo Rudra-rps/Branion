@@ -6,6 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: ['@tambo-ai/react'],
 }
 
 export default nextConfig

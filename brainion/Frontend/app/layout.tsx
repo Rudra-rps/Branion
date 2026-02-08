@@ -2,9 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { TamboProvider } from '@tambo-ai/react'
-import { CurriculumProvider } from '@/hooks/use-curriculum'
-import { Toaster } from '@/components/ui/toaster'
+import { Providers } from '@/components/providers'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -47,12 +45,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <TamboProvider apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY || ''}>
-          <CurriculumProvider>
-            {children}
-            <Toaster />
-          </CurriculumProvider>
-        </TamboProvider>
+        <Providers>
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>

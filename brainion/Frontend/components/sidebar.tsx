@@ -255,7 +255,10 @@ Be concise, focused, and practical. Generate curriculum now.`
                 max="12"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2.5 rounded-lg appearance-none cursor-pointer slider-thumb"
+                style={{
+                  background: `linear-gradient(to right, rgb(147, 51, 234) 0%, rgb(147, 51, 234) ${((duration - 1) / 11) * 100}%, rgb(209, 213, 219) ${((duration - 1) / 11) * 100}%, rgb(209, 213, 219) 100%)`
+                }}
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
                 <span>1 week</span>
@@ -326,7 +329,10 @@ Be concise, focused, and practical. Generate curriculum now.`
                     step="1"
                     value={timePerDay}
                     onChange={(e) => setTimePerDay(Number(e.target.value))}
-                    className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, rgb(147, 51, 234) 0%, rgb(147, 51, 234) ${((timePerDay - 1) / 3) * 100}%, rgb(209, 213, 219) ${((timePerDay - 1) / 3) * 100}%, rgb(209, 213, 219) 100%)`
+                    }}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>1h</span>
